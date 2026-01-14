@@ -48,6 +48,7 @@ export interface Meal {
   fats: number;
   prepTime: number;
   tags: string[];
+  dietTypes: DietType[];
   ingredients: string[];
   instructions?: string[];
   aiTip?: string;

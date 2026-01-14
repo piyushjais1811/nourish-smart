@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Sunrise, Sun, Cookie, Moon } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RecipeCard } from '@/components/cards/RecipeCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { sampleMeals, getMealsByType } from '@/data/sampleMeals';
+import { getMealsForDay } from '@/data/sampleMeals';
+import { useUser } from '@/contexts/UserContext';
 import { cn } from '@/lib/utils';
+import { Meal } from '@/types/user';
 
 const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -21,13 +23,47 @@ const mealTabs = [
 const MealPlanPage = () => {
   const [selectedDay, setSelectedDay] = useState(0);
   const [activeTab, setActiveTab] = useState('all');
+  const { userProfile } = useUser();
+  
+  const dietType = userProfile.dietType || 'anything';
+
+  // Get meals for the selected day filtered by diet type
+  const mealsForDay = useMemo(() => {
+    return getMealsForDay(selectedDay, dietType);
+  }, [selectedDay, dietType]);
 
   const getDisplayedMeals = () => {
     if (activeTab === 'all') {
-      return sampleMeals;
+      // Return first meal from each category for the day
+      return [
+        mealsForDay.breakfast[0],
+        mealsForDay.lunch[0],
+        mealsForDay.snacks[0],
+        mealsForDay.dinner[0],
+      ].filter(Boolean);
     }
-    return getMealsByType(activeTab as 'breakfast' | 'lunch' | 'dinner' | 'snacks');
+    return mealsForDay[activeTab as 'breakfast' | 'lunch' | 'dinner' | 'snacks'].slice(0, 2);
   };
+
+  // Calculate nutrition for the day
+  const dailyNutrition = useMemo(() => {
+    const meals = [
+      mealsForDay.breakfast[0],
+      mealsForDay.lunch[0],
+      mealsForDay.snacks[0],
+      mealsForDay.dinner[0],
+    ].filter(Boolean);
+    
+    return meals.reduce(
+      (acc, meal) => ({
+        calories: acc.calories + meal.calories,
+        protein: acc.protein + meal.protein,
+        carbs: acc.carbs + meal.carbs,
+        fats: acc.fats + meal.fats,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fats: 0 }
+    );
+  }, [mealsForDay]);
 
   // Get current week dates
   const getWeekDates = () => {
@@ -48,6 +84,21 @@ const MealPlanPage = () => {
   };
 
   const weekDates = getWeekDates();
+  const displayedMeals = getDisplayedMeals();
+
+  // Get diet type display name
+  const getDietTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      vegan: 'Vegan',
+      vegetarian: 'Vegetarian',
+      non_vegetarian: 'Non-Vegetarian',
+      keto: 'Keto',
+      paleo: 'Paleo',
+      pescatarian: 'Pescatarian',
+      anything: 'All Foods',
+    };
+    return labels[type] || 'All Foods';
+  };
 
   return (
     <AppLayout>
@@ -63,6 +114,9 @@ const MealPlanPage = () => {
           <p className="text-muted-foreground">
             Your personalized weekly meal schedule
           </p>
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+            🍽️ {getDietTypeLabel(dietType)} Plan
+          </div>
         </motion.div>
 
         {/* Week Selector */}
@@ -111,11 +165,11 @@ const MealPlanPage = () => {
           className="grid grid-cols-4 gap-3"
         >
           {[
-            { label: 'Calories', value: '1,700', unit: 'kcal', color: 'bg-calories' },
-            { label: 'Protein', value: '117', unit: 'g', color: 'bg-protein' },
-            { label: 'Carbs', value: '166', unit: 'g', color: 'bg-carbs' },
-            { label: 'Fats', value: '62', unit: 'g', color: 'bg-fats' },
-          ].map((stat, index) => (
+            { label: 'Calories', value: dailyNutrition.calories.toLocaleString(), unit: 'kcal', color: 'bg-calories' },
+            { label: 'Protein', value: dailyNutrition.protein.toString(), unit: 'g', color: 'bg-protein' },
+            { label: 'Carbs', value: dailyNutrition.carbs.toString(), unit: 'g', color: 'bg-carbs' },
+            { label: 'Fats', value: dailyNutrition.fats.toString(), unit: 'g', color: 'bg-fats' },
+          ].map((stat) => (
             <div
               key={stat.label}
               className="bg-card rounded-xl p-3 text-center shadow-soft border border-border/50"
@@ -148,22 +202,29 @@ const MealPlanPage = () => {
             </TabsList>
 
             <TabsContent value={activeTab} className="mt-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {getDisplayedMeals().map((meal, index) => (
-                  <motion.div
-                    key={meal.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 * index }}
-                  >
-                    <RecipeCard
-                      meal={meal}
-                      onSwap={() => console.log('Swap meal:', meal.id)}
-                      onLock={() => console.log('Lock meal:', meal.id)}
-                    />
-                  </motion.div>
-                ))}
-              </div>
+              {displayedMeals.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {displayedMeals.map((meal, index) => (
+                    <motion.div
+                      key={meal.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 * index }}
+                    >
+                      <RecipeCard
+                        meal={meal}
+                        onSwap={() => console.log('Swap meal:', meal.id)}
+                        onLock={() => console.log('Lock meal:', meal.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>No meals available for your diet type in this category.</p>
+                  <p className="text-sm mt-2">Try selecting a different meal type or day.</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </motion.div>
