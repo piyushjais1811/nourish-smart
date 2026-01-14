@@ -94,7 +94,7 @@ Ask natural questions:
 
 ● Designed for quick daily use on mobile
 
-# Team Avengers
+## Team Avengers
 
 Avni Rungta
 
@@ -106,6 +106,6 @@ Shubh Jauhari
 
 Ritika Jain
 
-# License
+## License
 
 For hackathon and educational purposes only.
