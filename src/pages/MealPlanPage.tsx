@@ -27,10 +27,10 @@ const MealPlanPage = () => {
   
   const dietType = userProfile.dietType || 'anything';
 
-  // Get meals for the selected day filtered by diet type
+  // Get meals for the selected day filtered by user profile
   const mealsForDay = useMemo(() => {
-    return getMealsForDay(selectedDay, dietType);
-  }, [selectedDay, dietType]);
+    return getMealsForDay(selectedDay, userProfile);
+  }, [selectedDay, userProfile]);
 
   const getDisplayedMeals = () => {
     if (activeTab === 'all') {
