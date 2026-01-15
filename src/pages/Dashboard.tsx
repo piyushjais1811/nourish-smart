@@ -20,10 +20,10 @@ const Dashboard = () => {
     return day === 0 ? 6 : day - 1; // Convert Sunday=0 to 6, Monday=1 to 0
   }, []);
   
-  // Get meals for today based on diet type
+  // Get meals for today based on user profile
   const todayMeals = useMemo(() => {
-    return getMealsForDay(todayIndex, dietType);
-  }, [todayIndex, dietType]);
+    return getMealsForDay(todayIndex, userProfile);
+  }, [todayIndex, userProfile]);
   
   const breakfastMeal = todayMeals.breakfast[0];
   const lunchMeal = todayMeals.lunch[0];
