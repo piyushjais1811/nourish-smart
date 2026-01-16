@@ -35,11 +35,11 @@ export const RecipeDetailModal = ({ meal, isOpen, onClose }: RecipeDetailModalPr
           
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-lg md:w-full md:max-h-[85vh] bg-card rounded-2xl shadow-2xl border border-border z-50 overflow-hidden flex flex-col"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-lg max-h-[80vh] bg-card rounded-2xl shadow-2xl border border-border z-50 overflow-hidden flex flex-col"
           >
             {/* Header Image */}
             <div className="relative h-48 shrink-0">
@@ -76,7 +76,7 @@ export const RecipeDetailModal = ({ meal, isOpen, onClose }: RecipeDetailModalPr
             </div>
 
             {/* Scrollable Content */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 [&>div>div]:!block" type="always">
               <div className="p-4 space-y-4">
                 {/* Nutrition Stats */}
                 <div className="grid grid-cols-4 gap-2">
