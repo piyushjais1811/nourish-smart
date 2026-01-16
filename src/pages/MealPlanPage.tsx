@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getMealsForDay, getSwapOptions } from '@/data/sampleMeals';
 import { useUser } from '@/contexts/UserContext';
+import { useLockedMeals } from '@/hooks/useLockedMeals';
 import { cn } from '@/lib/utils';
 import { Meal } from '@/types/user';
 import { toast } from 'sonner';
@@ -30,31 +31,68 @@ const MealPlanPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const [swapMeal, setSwapMeal] = useState<{ meal: Meal; type: 'breakfast' | 'lunch' | 'dinner' | 'snacks' } | null>(null);
-  const [lockedMeals, setLockedMeals] = useState<Record<string, boolean>>({});
   const [swappedMeals, setSwappedMeals] = useState<Record<string, Meal>>({});
+  const [weekOffset, setWeekOffset] = useState(0);
+  
   const { userProfile } = useUser();
+  const { lockMeal, unlockMeal, isLocked, getLockedMeal } = useLockedMeals();
   
   const dietType = userProfile.dietType || 'anything';
   const mealsPerDay = userProfile.mealsPerDay || { breakfast: true, lunch: true, snacks: true, dinner: true };
 
+  // Get current week dates
+  const getWeekDates = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + (weekOffset * 7));
+
+    return weekDays.map((day, index) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + index);
+      return {
+        day,
+        date: date.getDate(),
+        fullDate: date.toISOString().split('T')[0],
+        isToday: date.toDateString() === today.toDateString(),
+      };
+    });
+  };
+
+  const weekDates = getWeekDates();
+  const currentDateStr = weekDates[selectedDay]?.fullDate || '';
+
   // Get meals for the selected day filtered by user profile
   const mealsForDay = useMemo(() => {
-    return getMealsForDay(selectedDay, userProfile);
-  }, [selectedDay, userProfile]);
+    return getMealsForDay(selectedDay + (weekOffset * 7), userProfile);
+  }, [selectedDay, weekOffset, userProfile]);
 
-  // Apply swapped meals
+  // Apply swapped meals or locked meals
   const getDisplayedMeal = (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', index: number) => {
-    const key = `${selectedDay}-${mealType}-${index}`;
+    // First check if there's a locked meal for this date and type
+    const lockedMeal = getLockedMeal(currentDateStr, mealType);
+    if (lockedMeal) return lockedMeal;
+    
+    // Then check for swapped meals
+    const key = `${currentDateStr}-${mealType}-${index}`;
     return swappedMeals[key] || mealsForDay[mealType][index];
   };
 
   const getDisplayedMeals = () => {
     if (activeTab === 'all') {
       const meals: Meal[] = [];
-      if (mealsPerDay.breakfast && mealsForDay.breakfast[0]) meals.push(getDisplayedMeal('breakfast', 0));
-      if (mealsPerDay.lunch && mealsForDay.lunch[0]) meals.push(getDisplayedMeal('lunch', 0));
-      if (mealsPerDay.snacks && mealsForDay.snacks[0]) meals.push(getDisplayedMeal('snacks', 0));
-      if (mealsPerDay.dinner && mealsForDay.dinner[0]) meals.push(getDisplayedMeal('dinner', 0));
+      if (mealsPerDay.breakfast && (mealsForDay.breakfast[0] || getLockedMeal(currentDateStr, 'breakfast'))) {
+        meals.push(getDisplayedMeal('breakfast', 0));
+      }
+      if (mealsPerDay.lunch && (mealsForDay.lunch[0] || getLockedMeal(currentDateStr, 'lunch'))) {
+        meals.push(getDisplayedMeal('lunch', 0));
+      }
+      if (mealsPerDay.snacks && (mealsForDay.snacks[0] || getLockedMeal(currentDateStr, 'snacks'))) {
+        meals.push(getDisplayedMeal('snacks', 0));
+      }
+      if (mealsPerDay.dinner && (mealsForDay.dinner[0] || getLockedMeal(currentDateStr, 'dinner'))) {
+        meals.push(getDisplayedMeal('dinner', 0));
+      }
       return meals.filter(Boolean);
     }
     const mealType = activeTab as 'breakfast' | 'lunch' | 'dinner' | 'snacks';
@@ -79,27 +117,8 @@ const MealPlanPage = () => {
       }),
       { calories: 0, protein: 0, carbs: 0, fats: 0 }
     );
-  }, [mealsForDay, swappedMeals, mealsPerDay]);
+  }, [mealsForDay, swappedMeals, mealsPerDay, currentDateStr]);
 
-  // Get current week dates
-  const getWeekDates = () => {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
-    return weekDays.map((day, index) => {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + index);
-      return {
-        day,
-        date: date.getDate(),
-        isToday: date.toDateString() === today.toDateString(),
-      };
-    });
-  };
-
-  const weekDates = getWeekDates();
   const displayedMeals = getDisplayedMeals();
 
   const getDietTypeLabel = (type: string) => {
@@ -119,6 +138,12 @@ const MealPlanPage = () => {
     if (mealsForDay.breakfast.some(m => m?.id === meal.id)) return 'breakfast';
     if (mealsForDay.lunch.some(m => m?.id === meal.id)) return 'lunch';
     if (mealsForDay.dinner.some(m => m?.id === meal.id)) return 'dinner';
+    
+    // Check locked meals
+    if (getLockedMeal(currentDateStr, 'breakfast')?.id === meal.id) return 'breakfast';
+    if (getLockedMeal(currentDateStr, 'lunch')?.id === meal.id) return 'lunch';
+    if (getLockedMeal(currentDateStr, 'dinner')?.id === meal.id) return 'dinner';
+    
     return 'snacks';
   };
 
@@ -135,16 +160,28 @@ const MealPlanPage = () => {
 
   const handleSwap = (newMeal: Meal) => {
     if (swapMeal) {
-      const key = `${selectedDay}-${swapMeal.type}-0`;
+      const key = `${currentDateStr}-${swapMeal.type}-0`;
       setSwappedMeals(prev => ({ ...prev, [key]: newMeal }));
       toast.success(`Swapped to ${newMeal.name}!`);
     }
   };
 
-  const handleLockClick = (meal: Meal) => {
-    const isCurrentlyLocked = lockedMeals[meal.id];
-    setLockedMeals(prev => ({ ...prev, [meal.id]: !isCurrentlyLocked }));
-    toast.success(isCurrentlyLocked ? `${meal.name} unlocked` : `${meal.name} locked for all days`);
+  const handleLockClick = async (meal: Meal) => {
+    const mealType = getMealType(meal);
+    const mealIsLocked = isLocked(currentDateStr, mealType);
+    
+    if (mealIsLocked) {
+      await unlockMeal(currentDateStr, mealType);
+    } else {
+      await lockMeal(meal, mealType, currentDateStr);
+    }
+  };
+
+  const getWeekLabel = () => {
+    if (weekOffset === 0) return 'This Week';
+    if (weekOffset === 1) return 'Next Week';
+    if (weekOffset === -1) return 'Last Week';
+    return `Week ${weekOffset > 0 ? '+' : ''}${weekOffset}`;
   };
 
   return (
@@ -162,9 +199,13 @@ const MealPlanPage = () => {
         {/* Week Selector */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card rounded-2xl p-4 shadow-soft border border-border/50">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" size="icon"><ChevronLeft className="h-5 w-5" /></Button>
-            <span className="font-semibold text-foreground">This Week</span>
-            <Button variant="ghost" size="icon"><ChevronRight className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => setWeekOffset(prev => prev - 1)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <span className="font-semibold text-foreground">{getWeekLabel()}</span>
+            <Button variant="ghost" size="icon" onClick={() => setWeekOffset(prev => prev + 1)}>
+              <ChevronRight className="h-5 w-5" />
+            </Button>
           </div>
           <div className="flex gap-2">
             {weekDates.map((item, index) => (
@@ -214,17 +255,22 @@ const MealPlanPage = () => {
             <TabsContent value={activeTab} className="mt-6">
               {displayedMeals.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {displayedMeals.map((meal, index) => (
-                    <motion.div key={meal.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * index }}>
-                      <RecipeCard
-                        meal={meal}
-                        onClick={() => handleMealClick(meal)}
-                        onSwap={() => handleSwapClick(meal)}
-                        onLock={() => handleLockClick(meal)}
-                        isLocked={lockedMeals[meal.id]}
-                      />
-                    </motion.div>
-                  ))}
+                  {displayedMeals.map((meal, index) => {
+                    const mealType = getMealType(meal);
+                    const mealIsLocked = isLocked(currentDateStr, mealType);
+                    
+                    return (
+                      <motion.div key={`${meal.id}-${index}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * index }}>
+                        <RecipeCard
+                          meal={meal}
+                          onClick={() => handleMealClick(meal)}
+                          onSwap={() => handleSwapClick(meal)}
+                          onLock={() => handleLockClick(meal)}
+                          isLocked={mealIsLocked}
+                        />
+                      </motion.div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
@@ -237,7 +283,7 @@ const MealPlanPage = () => {
         </motion.div>
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-center text-xs text-muted-foreground">
-          💡 Tap a recipe for details • Use swap to change meals • Lock to keep favorites
+          💡 Tap a recipe for details • Use swap to change meals • Lock to save favorites
         </motion.p>
       </div>
 
