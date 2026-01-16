@@ -9,17 +9,31 @@ interface RecipeCardProps {
   meal: Meal;
   onSwap?: () => void;
   onLock?: () => void;
+  onClick?: () => void;
   isLocked?: boolean;
   className?: string;
 }
 
-export const RecipeCard = ({ meal, onSwap, onLock, isLocked, className }: RecipeCardProps) => {
+export const RecipeCard = ({ meal, onSwap, onLock, onClick, isLocked, className }: RecipeCardProps) => {
+  const handleSwapClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSwap?.();
+  };
+
+  const handleLockClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onLock?.();
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
       className={cn(
         "group bg-card rounded-2xl overflow-hidden shadow-soft card-hover border border-border/50",
+        onClick && "cursor-pointer",
+        isLocked && "ring-2 ring-primary ring-offset-2 ring-offset-background",
         className
       )}
     >
@@ -31,6 +45,15 @@ export const RecipeCard = ({ meal, onSwap, onLock, isLocked, className }: Recipe
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
+        
+        {/* Locked Indicator */}
+        {isLocked && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div className="bg-primary/90 backdrop-blur-sm rounded-full p-3">
+              <Lock className="h-6 w-6 text-primary-foreground" />
+            </div>
+          </div>
+        )}
         
         {/* Tags */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
@@ -52,17 +75,17 @@ export const RecipeCard = ({ meal, onSwap, onLock, isLocked, className }: Recipe
               variant="glass"
               size="icon"
               className="h-8 w-8"
-              onClick={onLock}
+              onClick={handleLockClick}
             >
               <Lock className={cn("h-4 w-4", isLocked && "text-primary")} />
             </Button>
           )}
-          {onSwap && (
+          {onSwap && !isLocked && (
             <Button
               variant="glass"
               size="icon"
               className="h-8 w-8"
-              onClick={onSwap}
+              onClick={handleSwapClick}
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -121,6 +144,13 @@ export const RecipeCard = ({ meal, onSwap, onLock, isLocked, className }: Recipe
               {meal.aiTip}
             </p>
           </div>
+        )}
+
+        {/* Tap hint */}
+        {onClick && (
+          <p className="text-[10px] text-center text-muted-foreground mt-3">
+            Tap for recipe details
+          </p>
         )}
       </div>
     </motion.div>

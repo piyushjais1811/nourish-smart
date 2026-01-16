@@ -112,24 +112,21 @@ const Index = () => {
               </Link>
             </div>
 
-            {/* Social Proof */}
+            {/* Trust Badges */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="mt-10 flex items-center gap-6"
+              className="mt-10 flex items-center gap-4 flex-wrap"
             >
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent border-2 border-background"
-                  />
-                ))}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground">
+                <span className="text-primary">✓</span> Personalized plans
               </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">10,000+ happy users</p>
-                <p className="text-xs text-muted-foreground">Join our nutrition community</p>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground">
+                <span className="text-primary">✓</span> Diet-specific recipes
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground">
+                <span className="text-primary">✓</span> AI-powered
               </div>
             </motion.div>
           </motion.div>
