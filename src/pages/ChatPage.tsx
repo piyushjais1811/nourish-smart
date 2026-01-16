@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -17,15 +18,17 @@ const suggestedQuestions = [
   "Suggest a high-protein dinner",
   "Replace lunch with something lighter",
   "Show eggless breakfast options",
-  "Why am I not meeting my protein goal?",
+  "What are the health benefits of omega-3?",
 ];
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm your nutrition assistant. I can help you with meal suggestions, recipe swaps, and nutrition questions. How can I help you today?",
+      content: "Hi! I'm NutriBot, your AI assistant. I can help you with meal suggestions, recipe swaps, nutrition questions, or really anything you'd like to chat about. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
@@ -43,7 +46,7 @@ const ChatPage = () => {
 
   const handleSend = async (text?: string) => {
     const messageText = text || input.trim();
-    if (!messageText) return;
+    if (!messageText || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -56,25 +59,127 @@ const ChatPage = () => {
     setInput('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses: Record<string, string> = {
-        "Suggest a high-protein dinner": "For a high-protein dinner, I recommend **Grilled Salmon with Sweet Potato**! It packs 45g of protein, is rich in omega-3 fatty acids, and takes only 30 minutes to prepare. The sweet potato adds healthy carbs for muscle recovery. Would you like me to add this to your meal plan?",
-        "Replace lunch with something lighter": "How about a **Mediterranean Salad**? It's only 420 calories but still provides 22g of protein from chickpeas and feta. It's fresh, satisfying, and won't make you feel sluggish in the afternoon. Want me to swap your current lunch?",
-        "Show eggless breakfast options": "Here are some delicious eggless breakfast options:\n\n1. **Overnight Oats** - 380 cal, 14g protein\n2. **Berry Yogurt Parfait** - 320 cal, 18g protein\n3. **Chia Pudding** - 290 cal, 12g protein\n\nAll are quick to prepare and packed with nutrients!",
-        "Why am I not meeting my protein goal?": "Looking at your meal plan, you're currently getting about 98g of protein, but your goal is 150g. Here's how to bridge the gap:\n\n1. Add a protein shake between meals (+25g)\n2. Include Greek yogurt as a snack (+15g)\n3. Increase chicken portion at lunch (+12g)\n\nThese simple tweaks will help you hit your target! 💪",
-      };
+    // Prepare messages for API (excluding initial greeting and only sending role/content)
+    const apiMessages = [...messages.filter(m => m.id !== '1'), userMessage].map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+    let assistantContent = '';
+    
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        if (resp.status === 429) {
+          toast.error('Rate limit exceeded', { description: 'Please try again in a moment.' });
+        } else if (resp.status === 402) {
+          toast.error('Service unavailable', { description: 'Please try again later.' });
+        } else {
+          toast.error('Failed to get response', { description: errorData.error || 'Please try again.' });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      if (!resp.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = '';
+      let streamDone = false;
+      const assistantId = (Date.now() + 1).toString();
+
+      // Add empty assistant message that we'll update
+      setMessages((prev) => [...prev, {
+        id: assistantId,
         role: 'assistant',
-        content: responses[messageText] || "That's a great question! Based on your profile and goals, I'd suggest focusing on balanced meals with adequate protein. Would you like specific meal recommendations or help adjusting your current plan?",
+        content: '',
         timestamp: new Date(),
-      };
+      }]);
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') {
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages((prev) => 
+                prev.map((m) => 
+                  m.id === assistantId 
+                    ? { ...m, content: assistantContent }
+                    : m
+                )
+              );
+            }
+          } catch {
+            textBuffer = line + '\n' + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split('\n')) {
+          if (!raw) continue;
+          if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+          if (raw.startsWith(':') || raw.trim() === '') continue;
+          if (!raw.startsWith('data: ')) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages((prev) => 
+                prev.map((m) => 
+                  m.id === assistantId 
+                    ? { ...m, content: assistantContent }
+                    : m
+                )
+              );
+            }
+          } catch { /* ignore */ }
+        }
+      }
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      toast.error('Failed to send message', { description: 'Please check your connection and try again.' });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -148,7 +253,7 @@ const ChatPage = () => {
           </AnimatePresence>
 
           {/* Loading indicator */}
-          {isLoading && (
+          {isLoading && messages[messages.length - 1]?.role === 'user' && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -203,7 +308,7 @@ const ChatPage = () => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me anything about your nutrition..."
+              placeholder="Ask me anything..."
               className="flex-1 h-12 rounded-xl"
               disabled={isLoading}
             />
