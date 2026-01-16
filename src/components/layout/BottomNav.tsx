@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { path: '/dashboard', label: 'Home', icon: Home },
   { path: '/meal-plan', label: 'Meals', icon: UtensilsCrossed },
-  { path: '/grocery-list', label: 'Grocery', icon: ShoppingCart },
   { path: '/chat', label: 'AI Chat', icon: MessageCircle },
+  { path: '/grocery-list', label: 'Grocery', icon: ShoppingCart },
   { path: '/profile', label: 'Profile', icon: User },
 ];
 
