@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Flame, TrendingUp, Calendar, Sunrise, Sun, Cookie, Moon, ChevronRight, Sparkles } from 'lucide-react';
@@ -9,10 +9,31 @@ import { Button } from '@/components/ui/button';
 import { NutritionSummary } from '@/types/user';
 import { getMealsForDay } from '@/data/sampleMeals';
 import { useUser } from '@/contexts/UserContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const { userProfile } = useUser();
+  const { user } = useAuth();
+  const [streak, setStreak] = useState(1);
   const dietType = userProfile.dietType || 'anything';
+
+  // Load streak from database
+  useEffect(() => {
+    const loadStreak = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('streak_count')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data?.streak_count) {
+        setStreak(data.streak_count);
+      }
+    };
+    loadStreak();
+  }, [user]);
   
   // Get today's day index (0 = Monday, 6 = Sunday)
   const todayIndex = useMemo(() => {
@@ -151,7 +172,7 @@ const Dashboard = () => {
               <TrendingUp className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium text-muted-foreground">Streak</span>
             </div>
-            <p className="text-3xl font-bold text-foreground">7 days</p>
+            <p className="text-3xl font-bold text-foreground">{streak} days</p>
             <p className="text-sm text-muted-foreground">Keep it going! 🔥</p>
           </div>
         </motion.div>
