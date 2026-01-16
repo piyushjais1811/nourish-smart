@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Download, ShoppingCart, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { Check, Download, ShoppingCart, ChevronDown, ChevronUp, RefreshCw, ExternalLink } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -9,6 +9,22 @@ import { toast } from 'sonner';
 import { useLockedMeals } from '@/hooks/useLockedMeals';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Amazon icon component
+const AmazonIcon = ({ className }: { className?: string }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 24 24" 
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M15.93 17.09c-.18.16-.43.17-.63.06-.89-.74-1.05-1.08-1.54-1.79-1.47 1.5-2.51 1.95-4.42 1.95-2.25 0-4.01-1.39-4.01-4.17 0-2.18 1.17-3.64 2.86-4.38 1.46-.64 3.49-.76 5.04-.93v-.35c0-.64.05-1.41-.33-1.96-.33-.49-.95-.7-1.5-.7-1.02 0-1.93.53-2.15 1.61-.05.24-.23.48-.47.49l-2.6-.28c-.22-.05-.47-.22-.4-.56.6-3.15 3.45-4.1 6-4.1 1.3 0 3 .35 4.03 1.33C17.11 4.55 17 6.18 17 7.95v4.17c0 1.25.52 1.8 1 2.48.17.24.21.53 0 .71-.54.45-1.5 1.29-2.03 1.76l-.04.02zm-2.47-3.95c.55-1.01.52-1.95.52-3.16v-.51c-1.94 0-4 .41-4 2.66 0 1.15.59 1.92 1.61 1.92.74 0 1.4-.45 1.87-.91zM20.16 19.54C18 21.14 14.82 22 12.1 22c-3.81 0-7.25-1.41-9.85-3.76-.2-.18-.02-.43.22-.29 2.81 1.63 6.28 2.61 9.87 2.61 2.42 0 5.07-.5 7.51-1.54.37-.16.68.24.31.52zm.89-1.02c-.28-.36-1.85-.17-2.55-.08-.21.02-.24-.16-.06-.3 1.25-.88 3.31-.62 3.55-.33.24.3-.07 2.35-1.24 3.32-.18.15-.35.07-.27-.12.26-.65.85-2.13.57-2.49z"/>
+  </svg>
+);
+
+const handleAmazonSearch = (itemName: string) => {
+  const searchQuery = encodeURIComponent(itemName);
+  window.open(`https://www.amazon.com/s?k=${searchQuery}`, '_blank');
+};
 interface GroceryItem {
   id: string;
   name: string;
@@ -518,9 +534,21 @@ const GroceryListPage = () => {
                                 {item.name}
                               </p>
                             </div>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-muted-foreground mr-2">
                               {item.quantity}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-[#FF9900] hover:text-[#FF9900] hover:bg-[#FF9900]/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAmazonSearch(item.name);
+                              }}
+                              title={`Search "${item.name}" on Amazon`}
+                            >
+                              <AmazonIcon className="h-5 w-5" />
+                            </Button>
                           </motion.div>
                         ))}
                       </div>
@@ -537,7 +565,7 @@ const GroceryListPage = () => {
               transition={{ delay: 0.5 }}
               className="text-center text-xs text-muted-foreground"
             >
-              📥 Tap the download button to save your list as PDF
+              📥 Tap download to save as PDF • 🛒 Tap Amazon icon to shop
             </motion.p>
           </>
         )}
