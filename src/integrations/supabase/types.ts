@@ -14,7 +14,165 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      achievements: {
+        Row: {
+          achievement_description: string | null
+          achievement_name: string
+          achievement_type: string
+          badge_icon: string | null
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_description?: string | null
+          achievement_name: string
+          achievement_type: string
+          badge_icon?: string | null
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_description?: string | null
+          achievement_name?: string
+          achievement_type?: string
+          badge_icon?: string | null
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      locked_meals: {
+        Row: {
+          created_at: string
+          id: string
+          meal_data: Json
+          meal_date: string
+          meal_id: string
+          meal_name: string
+          meal_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meal_data: Json
+          meal_date: string
+          meal_id: string
+          meal_name: string
+          meal_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meal_data?: Json
+          meal_date?: string
+          meal_id?: string
+          meal_name?: string
+          meal_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          allergies: string[] | null
+          created_at: string
+          custom_allergies: string | null
+          diet_type: string | null
+          display_name: string | null
+          fitness_goal: string | null
+          gender: string | null
+          height: number | null
+          id: string
+          last_login_date: string | null
+          meal_variety: string | null
+          meals_per_day: Json | null
+          streak_count: number | null
+          target_weight: number | null
+          timeframe: string | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[] | null
+          created_at?: string
+          custom_allergies?: string | null
+          diet_type?: string | null
+          display_name?: string | null
+          fitness_goal?: string | null
+          gender?: string | null
+          height?: number | null
+          id?: string
+          last_login_date?: string | null
+          meal_variety?: string | null
+          meals_per_day?: Json | null
+          streak_count?: number | null
+          target_weight?: number | null
+          timeframe?: string | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[] | null
+          created_at?: string
+          custom_allergies?: string | null
+          diet_type?: string | null
+          display_name?: string | null
+          fitness_goal?: string | null
+          gender?: string | null
+          height?: number | null
+          id?: string
+          last_login_date?: string | null
+          meal_variety?: string | null
+          meals_per_day?: Json | null
+          streak_count?: number | null
+          target_weight?: number | null
+          timeframe?: string | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          notifications_enabled: boolean | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
