@@ -148,6 +148,19 @@ export const RecipeDetailModal = ({ meal, isOpen, onClose }: RecipeDetailModalPr
                   </div>
                 )}
 
+                {/* Watch on YouTube */}
+                <div className="pt-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-red-500/30 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30" 
+                    onClick={handleWatchVideo}
+                  >
+                    <Play className="h-4 w-4 mr-2 fill-current" />
+                    Watch on YouTube
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+
                 {/* AI Tip */}
                 {meal.aiTip && (
                   <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
@@ -159,18 +172,6 @@ export const RecipeDetailModal = ({ meal, isOpen, onClose }: RecipeDetailModalPr
               </div>
             </ScrollArea>
 
-            {/* Footer with Video Button */}
-            <div className="p-4 border-t border-border shrink-0">
-              <Button 
-                variant="hero" 
-                className="w-full" 
-                onClick={handleWatchVideo}
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Watch Recipe Video
-                <ExternalLink className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
           </motion.div>
         </>
       )}
