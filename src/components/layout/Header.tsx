@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Home, UtensilsCrossed, ShoppingCart, User, Sparkles } from 'lucide-react';
+import { Menu, X, Home, UtensilsCrossed, ShoppingCart, User, Sparkles, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,7 @@ const navLinks = [
   { path: '/dashboard', label: 'Home', icon: Home },
   { path: '/meal-plan', label: 'Meal Plan', icon: UtensilsCrossed },
   { path: '/grocery-list', label: 'Grocery', icon: ShoppingCart },
+  { path: '/chat', label: 'AI Chat', icon: MessageCircle },
 ];
 
 export const Header = () => {
