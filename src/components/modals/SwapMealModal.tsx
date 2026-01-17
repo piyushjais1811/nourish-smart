@@ -35,7 +35,7 @@ export const SwapMealModal = ({ isOpen, onClose, currentMeal, swapOptions, onSwa
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-lg md:w-full md:max-h-[85vh] bg-card rounded-2xl shadow-2xl border border-border z-50 overflow-hidden flex flex-col"
+            className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-lg md:w-full md:h-[85vh] bg-card rounded-2xl shadow-2xl border border-border z-50 overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
@@ -69,7 +69,7 @@ export const SwapMealModal = ({ isOpen, onClose, currentMeal, swapOptions, onSwa
             </div>
 
             {/* Swap Options */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-y-auto">
               <div className="p-4">
                 <p className="text-sm font-medium text-foreground mb-3">
                   Choose an alternative ({swapOptions.length} available):
